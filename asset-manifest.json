@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/rifa-site/static/css/main.e2f79c6d.css",
+    "main.js": "/rifa-site/static/js/main.aa6fb55b.js",
+    "index.html": "/rifa-site/index.html",
+    "main.e2f79c6d.css.map": "/rifa-site/static/css/main.e2f79c6d.css.map",
+    "main.aa6fb55b.js.map": "/rifa-site/static/js/main.aa6fb55b.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e2f79c6d.css",
+    "static/js/main.aa6fb55b.js"
+  ]
+}
