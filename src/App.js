@@ -1,32 +1,34 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import RifaUserPage from './RifaUserPage';
-import RifaAdminPage from './RifaAdminPage';
+import RifaAdminPage from './RifaAdminPage'; // Supondo que você tenha esse componente
 
-function App() {
-  const [participants, setParticipants] = React.useState([]);
-  const [reservedNumbers, setReservedNumbers] = React.useState(new Set());
+const App = () => {
+  const [participants, setParticipants] = useState([]);
+  const [reservedNumbers, setReservedNumbers] = useState(new Set());
 
   return (
     <Router>
-      <Switch>
-        {/* Página do Administrador */}
-        <Route path="/admin">
-          <RifaAdminPage participants={participants} setParticipants={setParticipants} />
-        </Route>
-
-        {/* Página do Usuário */}
-        <Route path="/">
-          <RifaUserPage 
+      <Routes>
+        <Route 
+          path="/" 
+          element={<RifaUserPage 
             setParticipants={setParticipants} 
             participants={participants} 
             reservedNumbers={reservedNumbers} 
-            setReservedNumbers={setReservedNumbers} 
-          />
-        </Route>
-      </Switch>
+            setReservedNumbers={setReservedNumbers}
+          />} 
+        />
+        <Route 
+          path="/admin" 
+          element={<RifaAdminPage 
+            participants={participants} 
+            reservedNumbers={reservedNumbers}
+          />} 
+        />
+      </Routes>
     </Router>
   );
-}
+};
 
 export default App;
