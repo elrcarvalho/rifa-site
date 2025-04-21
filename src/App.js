@@ -7,6 +7,12 @@ function App() {
   const [phone, setPhone] = useState('');
   const [price, setPrice] = useState(2.00); // valor por número
   const [status, setStatus] = useState({});
+  const [isAdmin, setIsAdmin] = useState(false); // Controle para verificar se é o administrador
+
+  // Função para mascarar o número de telefone
+  const maskPhone = (phone) => {
+    return phone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+  };
 
   const toggleSelect = (number) => {
     if (status[number]) return;
@@ -85,7 +91,7 @@ function App() {
         <ul>
           {reservedEntries.map(([num, info]) => (
             <li key={num}>
-              Nº {num} - {info.name} ({info.phone})
+              Nº {num} - {info.name} ({isAdmin ? info.phone : maskPhone(info.phone)})
             </li>
           ))}
         </ul>
