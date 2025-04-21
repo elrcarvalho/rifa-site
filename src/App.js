@@ -4,7 +4,7 @@ import QRCode from 'react-qr-code'; // Biblioteca para gerar o QR code
 const RifaForm = () => {
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
-  const [selectedNumber, setSelectedNumber] = useState(null);
+  const [selectedNumbers, setSelectedNumbers] = useState([]); // Agora podemos selecionar múltiplos números
   const [error, setError] = useState('');
   const [participants, setParticipants] = useState([]);
   const [reservedNumbers, setReservedNumbers] = useState(new Set()); // Para controlar números reservados
@@ -27,27 +27,34 @@ const RifaForm = () => {
     setPhone(value);
   };
 
+  // Função para anonimizar o telefone na lista
+  const anonymizePhone = (phone) => {
+    return `${phone.slice(0, 3)}*****${phone.slice(8)}`;
+  };
+
   // Função para validar a seleção do número da rifa
   const handleNumberSelection = (number) => {
     if (reservedNumbers.has(number)) {
       alert('Este número já foi reservado.');
     } else {
-      setSelectedNumber(number);
+      setSelectedNumbers((prev) => [...prev, number]); // Adiciona o número à lista de selecionados
     }
   };
 
   // Função que lida com a submissão do formulário
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!error && phone && name && selectedNumber) {
+    if (phone && name && selectedNumbers.length > 0) {
       setParticipants([
         ...participants,
-        { name, phone, selectedNumber, value: 5 } // O valor da rifa agora é fixo em 5 reais
+        { name, phone, selectedNumbers, value: 5 }
       ]);
-      setReservedNumbers(new Set(reservedNumbers.add(selectedNumber))); // Marca o número como reservado
+      // Marca os números como reservados
+      selectedNumbers.forEach((num) => reservedNumbers.add(num));
+      setReservedNumbers(new Set(reservedNumbers));
       setName('');
       setPhone('');
-      setSelectedNumber(null);
+      setSelectedNumbers([]);
     } else {
       alert('Por favor, preencha todos os campos corretamente.');
     }
@@ -58,8 +65,8 @@ const RifaForm = () => {
     return participants.map((participant, index) => (
       <tr key={index}>
         <td>{participant.name}</td>
-        <td>{participant.phone}</td>
-        <td>{participant.selectedNumber}</td>
+        <td>{anonymizePhone(participant.phone)}</td>
+        <td>{participant.selectedNumbers.join(', ')}</td>
         <td>R$ {participant.value}</td>
       </tr>
     ));
@@ -74,10 +81,15 @@ const RifaForm = () => {
           key={i}
           onClick={() => handleNumberSelection(i)}
           style={{
-            backgroundColor: reservedNumbers.has(i) ? 'gray' : 'lightblue',
+            backgroundColor: reservedNumbers.has(i) ? '#bbb' : '#4CAF50',
+            color: reservedNumbers.has(i) ? '#ccc' : 'white',
             margin: '5px',
             padding: '10px',
             cursor: reservedNumbers.has(i) ? 'not-allowed' : 'pointer',
+            borderRadius: '5px',
+            fontSize: '16px',
+            border: 'none',
+            transition: '0.3s',
           }}
           disabled={reservedNumbers.has(i)}
         >
@@ -89,56 +101,60 @@ const RifaForm = () => {
   };
 
   return (
-    <div>
-      <h1>Cadastro de Participantes para Rifa</h1>
+    <div style={{ fontFamily: 'Arial, sans-serif', padding: '20px' }}>
+      <h1 style={{ textAlign: 'center', color: '#333' }}>Cadastro de Participantes para Rifa</h1>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Nome:</label>
+      <form onSubmit={handleSubmit} style={{ maxWidth: '600px', margin: '0 auto', background: '#f9f9f9', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' }}>
+        <div style={{ marginBottom: '10px' }}>
+          <label style={{ fontSize: '16px', color: '#333' }}>Nome:</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nome completo"
             required
+            style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
           />
         </div>
 
-        <div>
-          <label>Telefone:</label>
+        <div style={{ marginBottom: '10px' }}>
+          <label style={{ fontSize: '16px', color: '#333' }}>Telefone:</label>
           <input
             type="text"
             value={formatPhone(phone)} // Aplica a formatação enquanto o usuário digita
             onChange={handlePhoneChange}
             placeholder="(XX) XXXXX-XXXX"
-            maxLength={15} // Limita o tamanho do campo
+            maxLength={15}
             required
+            style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
           />
         </div>
 
-        <div>
-          <label>Selecione um Número:</label>
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ fontSize: '16px', color: '#333' }}>Selecione um Número:</label>
           <div>{generateAvailableNumbers()}</div>
         </div>
 
         <div>
-          <h2>Pagamento via PIX</h2>
+          <h2 style={{ color: '#333' }}>Pagamento via PIX</h2>
           <p>Faça o pagamento para a chave PIX: <strong>centralterreno@gmail.com</strong></p>
           <QRCode value="centralterreno@gmail.com" />
           <p>Após o pagamento, envie o comprovante para o responsável pelo sorteio via WhatsApp.</p>
         </div>
 
-        <button type="submit" disabled={!selectedNumber}>Cadastrar</button>
+        <button type="submit" disabled={selectedNumbers.length === 0} style={{ width: '100%', padding: '12px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '18px', transition: '0.3s' }}>
+          Cadastrar
+        </button>
       </form>
 
-      <h2>Lista de Participantes</h2>
-      <table border="1">
+      <h2 style={{ textAlign: 'center', marginTop: '40px', color: '#333' }}>Lista de Participantes</h2>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }} border="1">
         <thead>
           <tr>
-            <th>Nome</th>
-            <th>Telefone</th>
-            <th>Número Selecionado</th>
-            <th>Valor do Número</th>
+            <th style={{ padding: '10px', backgroundColor: '#f1f1f1' }}>Nome</th>
+            <th style={{ padding: '10px', backgroundColor: '#f1f1f1' }}>Telefone</th>
+            <th style={{ padding: '10px', backgroundColor: '#f1f1f1' }}>Números Selecionados</th>
+            <th style={{ padding: '10px', backgroundColor: '#f1f1f1' }}>Valor</th>
           </tr>
         </thead>
         <tbody>
