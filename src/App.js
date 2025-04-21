@@ -1,103 +1,169 @@
 import React, { useState } from 'react';
-import './App.css';
+import QRCode from 'react-qr-code'; // Usaremos um pacote para gerar o QR code
 
-function App() {
-  const [selectedNumbers, setSelectedNumbers] = useState([]);
-  const [name, setName] = useState('');
+const RifaForm = () => {
   const [phone, setPhone] = useState('');
-  const [price, setPrice] = useState(5.00); // valor por número
-  const [status, setStatus] = useState({});
-  const [isAdmin, setIsAdmin] = useState(false); // Controle para verificar se é o administrador
+  const [name, setName] = useState('');
+  const [selectedNumber, setSelectedNumber] = useState(null);
+  const [value, setValue] = useState('');
+  const [error, setError] = useState('');
+  const [participants, setParticipants] = useState([]);
+  const [reservedNumbers, setReservedNumbers] = useState(new Set()); // Para controlar números reservados
 
-  // Função para mascarar o número de telefone
-  const maskPhone = (phone) => {
-    return phone.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-  };
-
-  const toggleSelect = (number) => {
-    if (status[number]) return;
-    if (selectedNumbers.includes(number)) {
-      setSelectedNumbers(selectedNumbers.filter((n) => n !== number));
+  // Função para validar e formatar o telefone
+  const validatePhone = (phone) => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length === 11) {
+      return `(${cleanPhone.slice(0, 2)}) ${cleanPhone.slice(2, 7)}-${cleanPhone.slice(7, 11)}`;
     } else {
-      setSelectedNumbers([...selectedNumbers, number]);
+      return 'Número inválido. O telefone precisa ter 11 dígitos.';
     }
   };
 
-  const handleReserve = () => {
-    if (selectedNumbers.length > 0 && name && phone) {
-      const updatedStatus = { ...status };
-      selectedNumbers.forEach((num) => {
-        updatedStatus[num] = { name, phone, status: 'reservado' };
-      });
-      setStatus(updatedStatus);
-      setSelectedNumbers([]);
+  // Função para validar a seleção do número da rifa
+  const handleNumberSelection = (number) => {
+    if (reservedNumbers.has(number)) {
+      alert('Este número já foi reservado.');
+    } else {
+      setSelectedNumber(number);
     }
   };
 
-  const whatsappLink = `https://wa.me/SEUNUMEROWHATSAPP?text=Olá, sou ${name}, reservei os números ${selectedNumbers.join(', ')} (Total: R$ ${(selectedNumbers.length * price).toFixed(2)}), e estou enviando o comprovante de pagamento.`;
+  // Função que lida com as mudanças no telefone
+  const handlePhoneChange = (event) => {
+    const { value } = event.target;
+    const formattedPhone = validatePhone(value);
+    if (formattedPhone === 'Número inválido. O telefone precisa ter 11 dígitos.') {
+      setError(formattedPhone);
+    } else {
+      setError('');
+      setPhone(formattedPhone);
+    }
+  };
 
-  const reservedEntries = Object.entries(status).filter(([_, v]) => v.status === 'reservado');
+  // Função que lida com a submissão do formulário
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!error && phone && name && selectedNumber) {
+      setParticipants([
+        ...participants,
+        { name, phone, selectedNumber, value }
+      ]);
+      setReservedNumbers(new Set(reservedNumbers.add(selectedNumber))); // Marca o número como reservado
+      setName('');
+      setPhone('');
+      setSelectedNumber(null);
+      setValue('');
+    } else {
+      alert('Por favor, preencha todos os campos corretamente.');
+    }
+  };
+
+  // Exibição dos participantes
+  const displayParticipants = () => {
+    return participants.map((participant, index) => (
+      <tr key={index}>
+        <td>{participant.name}</td>
+        <td>{participant.phone}</td>
+        <td>{participant.selectedNumber}</td>
+        <td>{participant.value}</td>
+      </tr>
+    ));
+  };
+
+  // Gerar números disponíveis
+  const generateAvailableNumbers = () => {
+    let numbers = [];
+    for (let i = 1; i <= 200; i++) {
+      numbers.push(
+        <button
+          key={i}
+          onClick={() => handleNumberSelection(i)}
+          style={{
+            backgroundColor: reservedNumbers.has(i) ? 'gray' : 'lightblue',
+            margin: '5px',
+            padding: '10px',
+            cursor: reservedNumbers.has(i) ? 'not-allowed' : 'pointer',
+          }}
+          disabled={reservedNumbers.has(i)}
+        >
+          {i}
+        </button>
+      );
+    }
+    return numbers;
+  };
 
   return (
-    <div className="App">
-      <h1>🎉 Rifa Solidária</h1>
-      <p className="price-info">Valor por número: <strong>R$ {price.toFixed(2)}</strong></p>
+    <div>
+      <h1>Cadastro de Participantes para Rifa</h1>
 
-      <div className="grid">
-        {[...Array(200)].map((_, i) => {
-          const num = i + 1;
-          return (
-            <button
-              key={num}
-              className={
-                status[num]?.status === 'reservado'
-                  ? 'reserved'
-                  : selectedNumbers.includes(num)
-                  ? 'selected'
-                  : 'available'
-              }
-              onClick={() => toggleSelect(num)}
-              disabled={!!status[num]}
-            >
-              {num}
-            </button>
-          );
-        })}
-      </div>
-
-      {selectedNumbers.length > 0 && (
-        <div className="form">
-          <h2>Números escolhidos: {selectedNumbers.join(', ')}</h2>
-          <p>Total: R$ {(selectedNumbers.length * price).toFixed(2)}</p>
-          <input placeholder="Seu nome" value={name} onChange={(e) => setName(e.target.value)} />
-          <input placeholder="Seu telefone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          <button onClick={handleReserve}>Reservar número(s)</button>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Nome:</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nome completo"
+            required
+          />
         </div>
-      )}
 
-      {selectedNumbers.length === 0 && name && phone && (
-        <div className="pagamento">
-          <h2>Pagamento</h2>
-          <p>Chave PIX: <strong>sua-chave@pix.com</strong></p>
-          <img src="/qrcode-pix.png" alt="QR Code PIX" width="200" />
-          <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
-            <button className="whatsapp-btn">Enviar comprovante via WhatsApp</button>
-          </a>
+        <div>
+          <label>Telefone:</label>
+          <input
+            type="text"
+            value={phone}
+            onChange={handlePhoneChange}
+            placeholder="(XX) XXXXX-XXXX"
+            required
+          />
+          {error && <p style={{ color: 'red' }}>{error}</p>}
         </div>
-      )}
 
-      <div className="lista">
-        <h2>📋 Lista de Participantes</h2>
-        <ul>
-          {reservedEntries.map(([num, info]) => (
-            <li key={num}>
-              Nº {num} - {info.name} ({isAdmin ? info.phone : maskPhone(info.phone)})
-            </li>
-          ))}
-        </ul>
-      </div>
+        <div>
+          <label>Selecione um Número:</label>
+          <div>{generateAvailableNumbers()}</div>
+        </div>
+
+        <div>
+          <label>Valor do Número:</label>
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Valor"
+            required
+          />
+        </div>
+
+        <div>
+          <h2>Pagamento via PIX</h2>
+          <p>Faça o pagamento para a chave PIX: <strong>centralterreno@gmail.com</strong></p>
+          <QRCode value="centralterreno@gmail.com" />
+          <p>Após o pagamento, envie o comprovante para o responsável pelo sorteio via WhatsApp.</p>
+        </div>
+
+        <button type="submit" disabled={error || !selectedNumber}>Cadastrar</button>
+      </form>
+
+      <h2>Lista de Participantes</h2>
+      <table border="1">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Telefone</th>
+            <th>Número Selecionado</th>
+            <th>Valor do Número</th>
+          </tr>
+        </thead>
+        <tbody>
+          {displayParticipants()}
+        </tbody>
+      </table>
     </div>
   );
-}
+};
 
-export default App;
+export default RifaForm;
