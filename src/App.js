@@ -5,7 +5,7 @@ function App() {
   const [selectedNumbers, setSelectedNumbers] = useState([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [price, setPrice] = useState(2.00); // valor por número
+  const [price, setPrice] = useState(5.00); // valor por número
   const [status, setStatus] = useState({});
   const [isAdmin, setIsAdmin] = useState(false); // Controle para verificar se é o administrador
 
