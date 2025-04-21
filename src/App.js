@@ -1,23 +1,30 @@
 import React, { useState } from 'react';
-import QRCode from 'react-qr-code'; // Usaremos um pacote para gerar o QR code
+import QRCode from 'react-qr-code'; // Biblioteca para gerar o QR code
 
 const RifaForm = () => {
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [selectedNumber, setSelectedNumber] = useState(null);
-  const [value, setValue] = useState('');
   const [error, setError] = useState('');
   const [participants, setParticipants] = useState([]);
   const [reservedNumbers, setReservedNumbers] = useState(new Set()); // Para controlar números reservados
 
-  // Função para validar e formatar o telefone
-  const validatePhone = (phone) => {
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length === 11) {
-      return `(${cleanPhone.slice(0, 2)}) ${cleanPhone.slice(2, 7)}-${cleanPhone.slice(7, 11)}`;
+  // Função para formatar o telefone
+  const formatPhone = (phone) => {
+    const cleanPhone = phone.replace(/\D/g, ''); // Remove qualquer coisa que não seja número
+    if (cleanPhone.length <= 2) {
+      return `(${cleanPhone}`;
+    } else if (cleanPhone.length <= 7) {
+      return `(${cleanPhone.slice(0, 2)}) ${cleanPhone.slice(2)}`;
     } else {
-      return 'Número inválido. O telefone precisa ter 11 dígitos.';
+      return `(${cleanPhone.slice(0, 2)}) ${cleanPhone.slice(2, 7)}-${cleanPhone.slice(7, 11)}`;
     }
+  };
+
+  // Função para validar o telefone (formatação)
+  const handlePhoneChange = (event) => {
+    const { value } = event.target;
+    setPhone(value);
   };
 
   // Função para validar a seleção do número da rifa
@@ -29,31 +36,18 @@ const RifaForm = () => {
     }
   };
 
-  // Função que lida com as mudanças no telefone
-  const handlePhoneChange = (event) => {
-    const { value } = event.target;
-    const formattedPhone = validatePhone(value);
-    if (formattedPhone === 'Número inválido. O telefone precisa ter 11 dígitos.') {
-      setError(formattedPhone);
-    } else {
-      setError('');
-      setPhone(formattedPhone);
-    }
-  };
-
   // Função que lida com a submissão do formulário
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!error && phone && name && selectedNumber) {
       setParticipants([
         ...participants,
-        { name, phone, selectedNumber, value }
+        { name, phone, selectedNumber, value: 5 } // O valor da rifa agora é fixo em 5 reais
       ]);
       setReservedNumbers(new Set(reservedNumbers.add(selectedNumber))); // Marca o número como reservado
       setName('');
       setPhone('');
       setSelectedNumber(null);
-      setValue('');
     } else {
       alert('Por favor, preencha todos os campos corretamente.');
     }
@@ -66,7 +60,7 @@ const RifaForm = () => {
         <td>{participant.name}</td>
         <td>{participant.phone}</td>
         <td>{participant.selectedNumber}</td>
-        <td>{participant.value}</td>
+        <td>R$ {participant.value}</td>
       </tr>
     ));
   };
@@ -114,28 +108,17 @@ const RifaForm = () => {
           <label>Telefone:</label>
           <input
             type="text"
-            value={phone}
+            value={formatPhone(phone)} // Aplica a formatação enquanto o usuário digita
             onChange={handlePhoneChange}
             placeholder="(XX) XXXXX-XXXX"
+            maxLength={15} // Limita o tamanho do campo
             required
           />
-          {error && <p style={{ color: 'red' }}>{error}</p>}
         </div>
 
         <div>
           <label>Selecione um Número:</label>
           <div>{generateAvailableNumbers()}</div>
-        </div>
-
-        <div>
-          <label>Valor do Número:</label>
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="Valor"
-            required
-          />
         </div>
 
         <div>
@@ -145,7 +128,7 @@ const RifaForm = () => {
           <p>Após o pagamento, envie o comprovante para o responsável pelo sorteio via WhatsApp.</p>
         </div>
 
-        <button type="submit" disabled={error || !selectedNumber}>Cadastrar</button>
+        <button type="submit" disabled={!selectedNumber}>Cadastrar</button>
       </form>
 
       <h2>Lista de Participantes</h2>
